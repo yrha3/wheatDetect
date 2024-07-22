@@ -82,11 +82,14 @@ const handleDownloadVideo = (video: string) => {
   if (video) {
     // 提取文件夹名和文件名
     const parts = video.split('/');
+    // 将video字符串按照'/'分割成一个数组
     const videoFilename = parts.pop() || 'video.mp4';
+    //从数组的末尾取出一个元素，即文件名
     const videoFolder = parts.pop() || '';
+    //再次从数组末尾取出一个元素，即文件夹名，若没有，则空
 
     // 拼接正确的下载 URL
-    const downloadUrl = `/results/download/video/${videoFolder}/${videoFilename}`;
+    const downloadUrl = `http://127.0.0.1:5000/results/download/video/${videoFolder}/${videoFilename}`;
     console.log('Download URL:', downloadUrl);
 
     // 创建一个临时的 <a> 元素，并触发下载

@@ -55,6 +55,7 @@
     <!-- <detection-results :results="results" v-if="results.length > 0" /> -->
     <detection-results :results="imageResults" v-if="imageResults.length > 0" />
     <video-detection-results :results="videoResults" v-if="videoResults.length > 0" />
+    <!-- 有检测信息才进行显示 -->
   </div>
 </template>
 
@@ -88,18 +89,23 @@ const handleVideoRemove: UploadProps['onRemove'] = (file, fileList) => {
   console.log('移除视频:', file, fileList);
 };
 
+// 函数接受的参数options类型为any，包含了上传文件的相关信息。
 const uploadImageFile = async (options: any) => {
   const { file } = options;
   const formData = new FormData();
   formData.append('file', file);
 
+  //Post 上传
   try {
+    // await等待方法的执行,发送post请求
     const response = await axios.post('http://127.0.0.1:5000/upload/image', formData, {
+      //请求的主体是formData包含文件数据
+      //设置请求头'Content-type’为multipart/form-data,说明请求包含文件上传。
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
-
+      //处理响应数据，将数据传入imageResults
     imageResults.value.push({
       image: `http://127.0.0.1:5000/results/${file.name}`,
       wheat_count: response.data.wheat_count,

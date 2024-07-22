@@ -143,28 +143,30 @@ def upload_image():
         return jsonify({'error': 'No selected file'})
 
     filename = file.filename
+    print("filename: {}".format(filename))
     filepath = os.path.join(UPLOAD_FOLDER, filename)
     file.save(filepath)
 
+    # 使用opencv读取图像,将图像加载为一个Numpy数组
     img = cv2.imread(filepath)
     img = letterbox(img, 640, stride=32, auto=True)[0]
     img0 = img.copy()
-    img = img.transpose((2, 0, 1))[::-1]
+    img = img.transpose((2, 0, 1))[::-1]#转化成Pytorch期望的输入格式：CHW。
     img = np.ascontiguousarray(img)
-    img = torch.from_numpy(img).to(device)
+    img = torch.from_numpy(img).to(device)#转化成张量并送入GPU
     img = img.float()
     img /= 255.0
     if img.ndimension() == 3:
-        img = img.unsqueeze(0)
+        img = img.unsqueeze(0)#图片数据归一化
 
-    pred = model(img, augment=False, visualize=False)
-    pred = non_max_suppression(pred, 0.25, 0.45, None, False, max_det=1000)
+    pred = model(img, augment=False, visualize=False)#用yolo模型进行预测
+    pred = non_max_suppression(pred, 0.25, 0.45, None, False, max_det=1000)#对预测结果进行非极大值抑制
 
     results = []
     names = model.names
 
     wheat_count = 0
-    img0 = draw_boxes(img0, pred, names)
+    img0 = draw_boxes(img0, pred, names)#调用函数绘制检测框
     for det in pred:
         if det is not None and len(det):
             wheat_count += len(det)
@@ -175,15 +177,16 @@ def upload_image():
                     'class': int(cls),
                     'class_name': names[int(cls)]
                 })
+    # 遍历每个预测结果，累加麦穗技术，对于有的检测结果，提取边界框坐标，置信度和类别
 
     detection_image_url = f'/results/{filename}'
-    cv2.imwrite(os.path.join(RESULT_FOLDER, filename), img0)
+    cv2.imwrite(os.path.join(RESULT_FOLDER, filename), img0)#结果保存
 
-    data_filename = f"{os.path.splitext(filename)[0]}.json"
+    data_filename = f"{os.path.splitext(filename)[0]}.json"#创建一个json文件
     data_filepath = os.path.join(RESULT_FOLDER, data_filename)
     with open(data_filepath, 'w') as f:
         json.dump(results, f)
-
+    #在文件中存储
     return jsonify({
         'image_url': detection_image_url,
         'wheat_count': wheat_count,
@@ -245,7 +248,9 @@ def get_image(filename):
 def download_image(filename):
     full_path = os.path.join(RESULT_FOLDER, filename)
     if os.path.isfile(full_path):
-        mime_type, _ = mimetypes.guess_type(full_path)
+        mime_type, _ = mimetypes.guess_type(full_path) #采用mimetypes来猜测MIME类型
+        print(mime_type)
+        print(full_path)
         return send_file(full_path, mimetype=mime_type, as_attachment=True, download_name=filename)
     else:
         return jsonify({'error': 'File not found'}), 404

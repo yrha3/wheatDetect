@@ -82,7 +82,10 @@ const handleDownloadData = (data_url: string) => {
 // 处理下载图片
 const handleDownloadImage = (image: string) => {
   if (image) {
-    const downloadUrl = new URL(`/results/download/${image.split('/').pop()}`, window.location.origin).toString();
+    const downloadUrl = new URL(`http://127.0.0.1:5000/results/download/${image.split('/').pop()}`, window.location.origin).toString();
+    // 构建下载URL
+    console.log("图片下载路径："+downloadUrl)
+    //临时的<>元素，出发下载
     const link = document.createElement('a');
     link.href = downloadUrl;
     link.download = image.split('/').pop() || 'image.png'; // 设置下载的文件名
