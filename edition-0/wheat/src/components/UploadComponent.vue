@@ -106,10 +106,11 @@ const uploadImageFile = async (options: any) => {
       },
     });
       //处理响应数据，将数据传入imageResults
+    const data_url = response.data.data_url;
     imageResults.value.push({
       image: `http://127.0.0.1:5000/results/${file.name}`,
       wheat_count: response.data.wheat_count,
-      data_url: response.data.data_url,
+      data_url: `http://127.0.0.1:5000${data_url}`,
     });
   } catch (error) {
     console.error('Error uploading image file:', error);

@@ -40,12 +40,12 @@ if str(ROOT) not in sys.path:
     sys.path.append(str(ROOT))  # add ROOT to PATH
 ROOT = Path(os.path.relpath(ROOT, Path.cwd()))  # relative
 
-from models.common import DetectMultiBackend
-from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadScreenshots, LoadStreams
+from models.common import DetectMultiBackend #通用的函数和类
+from utils.dataloaders import IMG_FORMATS, VID_FORMATS, LoadImages, LoadScreenshots, LoadStreams #加载图像或视频帧
 from utils.general import (LOGGER, Profile, check_file, check_img_size, check_imshow, check_requirements, colorstr, cv2,
-                           increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh)
-from utils.plots import Annotator, colors, save_one_box
-from utils.torch_utils import select_device, smart_inference_mode
+                           increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh) #工具函数
+from utils.plots import Annotator, colors, save_one_box #绘制矩形框和标注信息
+from utils.torch_utils import select_device, smart_inference_mode #Pytorch相关的工具函数
 
 
 @smart_inference_mode()
@@ -78,38 +78,38 @@ def run(
         dnn=False,  # use OpenCV DNN for ONNX inference
         vid_stride=1,  # video frame-rate stride
 ):
-    source = str(source)
+    source = str(source) #输入路径变成字符串
     save_img = not nosave and not source.endswith('.txt')  # save inference images
-    is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)
-    is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
-    webcam = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)
+    is_file = Path(source).suffix[1:] in (IMG_FORMATS + VID_FORMATS)#判断source是否是文件
+    is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))#判断source是否连接
+    webcam = source.isnumeric() or source.endswith('.txt') or (is_url and not is_file)#判断source是否是摄像头
     screenshot = source.lower().startswith('screen')
     if is_url and is_file:
-        source = check_file(source)  # download
+        source = check_file(source)  # download  处理输入来源
 
-    # Directories
+    # Directories 保存结果
     save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
     (save_dir / 'labels' if save_txt else save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
-    # Load model
+    # Load model 加载模型
     device = select_device(device)
     model = DetectMultiBackend(weights, device=device, dnn=dnn, data=data, fp16=half)
     stride, names, pt = model.stride, model.names, model.pt
     imgsz = check_img_size(imgsz, s=stride)  # check image size
 
-    # Dataloader
+    # Dataloader 加载数据
     bs = 1  # batch_size
     if webcam:
         view_img = check_imshow(warn=True)
         dataset = LoadStreams(source, img_size=imgsz, stride=stride, auto=pt, vid_stride=vid_stride)
-        bs = len(dataset)
+        bs = len(dataset) #批大小
     elif screenshot:
         dataset = LoadScreenshots(source, img_size=imgsz, stride=stride, auto=pt)
     else:
         dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, vid_stride=vid_stride)
     vid_path, vid_writer = [None] * bs, [None] * bs
 
-    # Run inference
+    # Run inference 推理部分，核心部分
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
     for path, im, im0s, vid_cap, s in dataset:
@@ -133,7 +133,7 @@ def run(
         # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
 
         # Process predictions
-        for i, det in enumerate(pred):  # per image
+        for i, det in enumerate(pred):  # per image 每次处理一张图片'i'
             seen += 1
             if webcam:  # batch_size >= 1
                 p, im0, frame = path[i], im0s[i].copy(), dataset.count
@@ -214,34 +214,35 @@ def run(
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
 
+#opt 用来设置输入参数的子函数
 def parse_opt():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'runs/train/exp3/weights/best.pt', help='model path or triton URL')
-    parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob/screen/0(webcam)')
-    parser.add_argument('--data', type=str, default=ROOT / 'data/GlobalWheat2020.yaml', help='(optional) dataset.yaml path')
-    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')
+    parser.add_argument('--weights', nargs='+', type=str, default=ROOT / 'runs/train/exp3/weights/best.pt', help='model path or triton URL') #训练的权重路径
+    parser.add_argument('--source', type=str, default=ROOT / 'data/images', help='file/dir/URL/glob/screen/0(webcam)')#测试数据路径
+    parser.add_argument('--data', type=str, default=ROOT / 'data/GlobalWheat2020.yaml', help='(optional) dataset.yaml path')#配置数据文件路径
+    parser.add_argument('--imgsz', '--img', '--img-size', nargs='+', type=int, default=[640], help='inference size h,w')#输入图片的尺寸
     parser.add_argument('--conf-thres', type=float, default=0.25, help='confidence threshold')#置信度大于default才会认为是目标
-    parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')
-    parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')
-    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
-    parser.add_argument('--view-img', action='store_true', help='show results')
-    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
-    parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
-    parser.add_argument('--save-crop', action='store_true', help='save cropped prediction boxes')
-    parser.add_argument('--nosave', action='store_true', help='do not save images/videos')
-    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --classes 0, or --classes 0 2 3')
-    parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')
-    parser.add_argument('--augment', action='store_true', help='augmented inference')
-    parser.add_argument('--visualize', action='store_true', help='visualize features')
-    parser.add_argument('--update', action='store_true', help='update all models')
-    parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
-    parser.add_argument('--name', default='exp', help='save results to project/name')
-    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
-    parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
-    parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
-    parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
-    parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
+    parser.add_argument('--iou-thres', type=float, default=0.45, help='NMS IoU threshold')#非极大抑制时的IOU(检测结果与标注结果重合率)阈值，默认0.45
+    parser.add_argument('--max-det', type=int, default=1000, help='maximum detections per image')#保留的最大检测框数量
+    parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')#使用的设备
+    parser.add_argument('--view-img', action='store_true', help='show results')#是否展示预测之后的图片
+    parser.add_argument('--save-txt', action='store_true', help='save results to *.txt') #是否将预测的框坐标以txt形式保存
+    parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')#是否保存检测结果的置信度
+    parser.add_argument('--save-crop', action='store_true', help='save cropped prediction boxes')#是否保存裁剪预测框图片
+    parser.add_argument('--nosave', action='store_true', help='do not save images/videos')#不保存
+    parser.add_argument('--classes', nargs='+', type=int, help='filter by class: --classes 0, or --classes 0 2 3')#仅检测指定类别
+    parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS')# 类别不敏感的非极大抑制
+    parser.add_argument('--augment', action='store_true', help='augmented inference')#是否使用数据增强进行推理
+    parser.add_argument('--visualize', action='store_true', help='visualize features')#是否可视化特征图
+    parser.add_argument('--update', action='store_true', help='update all models')#若执行则对所有模型执行strip_optimizer，去除pt文件中单优化器信息
+    parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')#结果保存的默认路径
+    parser.add_argument('--name', default='exp', help='save results to project/name')#结果保存的子目录名称
+    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')#是否覆盖已有的结果
+    parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')#bounding box 的线条宽度
+    parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels') #是否隐藏标签信息
+    parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences') #是否隐藏置信度信息
+    parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference') #是否使用半精度进行推理
+    parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference') #是否使用OpenCV DNN进行ONNX推理，默认为False
     parser.add_argument('--vid-stride', type=int, default=1, help='video frame-rate stride')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
@@ -249,11 +250,12 @@ def parse_opt():
     return opt
 
 
-def main(opt):
+def main(opt):  # 检查环境，主要是requirement.txt
     check_requirements(exclude=('tensorboard', 'thop'))
+    #执行run
     run(**vars(opt))
 
-
+#作为脚本直接执行才会调用下面这个方法，作为import引入是不会调用的
 if __name__ == "__main__":
     opt = parse_opt()
     main(opt)

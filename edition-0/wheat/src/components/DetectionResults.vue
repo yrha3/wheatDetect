@@ -67,7 +67,7 @@ const handleDownloadData = (data_url: string) => {
     // 使用绝对路径来避免潜在的路径问题
     const absoluteUrl = new URL(data_url, window.location.origin).toString();
     console.log("下载数据 URL:", absoluteUrl);
-
+    
     // 创建一个临时的 <a> 元素，并触发下载
     const link = document.createElement('a');
     link.href = absoluteUrl;
