@@ -37,6 +37,12 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
+import { getCurrentInstance } from 'vue';
+
+
+const { proxy } = getCurrentInstance();
+const baseUrl = proxy.$baseUrl;
+
 
 const props = defineProps<{
   results: Array<{ image: string; wheat_count: number, data_url: string }>
@@ -82,7 +88,7 @@ const handleDownloadData = (data_url: string) => {
 // 处理下载图片
 const handleDownloadImage = (image: string) => {
   if (image) {
-    const downloadUrl = new URL(`http://127.0.0.1:5000/results/download/${image.split('/').pop()}`, window.location.origin).toString();
+    const downloadUrl = new URL(baseUrl + `/results/download/${image.split('/').pop()}`, window.location.origin).toString();
     // 构建下载URL
     console.log("图片下载路径："+downloadUrl)
     //临时的<>元素，出发下载

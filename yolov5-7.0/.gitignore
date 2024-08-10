@@ -24,7 +24,7 @@
 !cfg/yolov3*.cfg
 
 storage.googleapis.com
-runs/*
+#runs/*
 
 !runs/
 !runs/**
@@ -53,7 +53,7 @@ VOC/
 
 # Neural Network weights -----------------------------------------------------------------------------------------------
 *.weights
-*.pt
+#*.pt  请上传模型
 *.pb
 *.onnx
 *.engine

@@ -36,6 +36,10 @@
 
 <script lang="ts" setup>
 import { ref } from 'vue'
+import { getCurrentInstance } from 'vue';
+
+const { proxy } = getCurrentInstance();
+const baseUrl = proxy.$baseUrl;
 
 const props = defineProps<{
   results: Array<{ video: string; frame_count: number, data_url: string }>
@@ -89,7 +93,7 @@ const handleDownloadVideo = (video: string) => {
     //再次从数组末尾取出一个元素，即文件夹名，若没有，则空
 
     // 拼接正确的下载 URL
-    const downloadUrl = `http://127.0.0.1:5000/results/download/video/${videoFolder}/${videoFilename}`;
+    const downloadUrl = baseUrl + `/results/download/video/${videoFolder}/${videoFilename}`;
     console.log('Download URL:', downloadUrl);
 
     // 创建一个临时的 <a> 元素，并触发下载

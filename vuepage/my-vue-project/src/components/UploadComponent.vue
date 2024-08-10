@@ -66,6 +66,15 @@ import DetectionResults from './DetectionResults.vue';
 import VideoDetectionResults from './VideoDetectionResults.vue';
 
 import type { UploadProps, UploadUserFile } from 'element-plus';
+import { getCurrentInstance } from 'vue';
+
+const { proxy } = getCurrentInstance();
+const baseUrl = proxy.$baseUrl;
+
+console.log("baseUrl: " + baseUrl); // 输出: http://127.0.0.1:5000
+
+
+
 
 const fileList = ref<UploadUserFile[]>([]);
 const imageFileList = ref<UploadUserFile[]>([]);
@@ -98,7 +107,7 @@ const uploadImageFile = async (options: any) => {
   //Post 上传
   try {
     // await等待方法的执行,发送post请求
-    const response = await axios.post('http://127.0.0.1:5000/upload/image', formData, {
+    const response = await axios.post(baseUrl + '/upload/image', formData, {
       //请求的主体是formData包含文件数据
       //设置请求头'Content-type’为multipart/form-data,说明请求包含文件上传。
       headers: {
@@ -108,9 +117,9 @@ const uploadImageFile = async (options: any) => {
       //处理响应数据，将数据传入imageResults
     const data_url = response.data.data_url;
     imageResults.value.push({
-      image: `http://127.0.0.1:5000/results/${file.name}`,
+      image: baseUrl + `/results/${file.name}`,
       wheat_count: response.data.wheat_count,
-      data_url: `http://127.0.0.1:5000${data_url}`,
+      data_url: baseUrl + `${data_url}`,
     });
   } catch (error) {
     console.error('Error uploading image file:', error);
@@ -123,7 +132,7 @@ const uploadVideoFile = async (options: any) => {
   formData.append('file', file);
 
   try {
-    const response = await axios.post('http://127.0.0.1:5000/upload/video', formData, {
+    const response = await axios.post(baseUrl + '/upload/video', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -133,9 +142,9 @@ const uploadVideoFile = async (options: any) => {
     const data_url = response.data.data_url;
 
     videoResults.value.push({
-      video: `http://127.0.0.1:5000${video_url}`,
+      video: baseUrl + `${video_url}`,
       frame_count: response.data.frame_count, // 假设后端返回 frame_count，如果没有需要修改
-      data_url: `http://127.0.0.1:5000${data_url}`,
+      data_url: baseUrl + `${data_url}`,
     });
 
     console.log('视频上传成功', response.data);
