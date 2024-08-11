@@ -8,12 +8,7 @@
     <el-menu-item index="1" @click="navigateTo('home')">首页</el-menu-item>
     <el-menu-item index="2" @click="navigateTo('login')">登录</el-menu-item>
     <el-menu-item index="3" @click="navigateTo('about')">关于我们</el-menu-item>
-    <el-sub-menu index="4">
-      <template #title>更多选项</template>
-      <el-menu-item index="4-1">选项一</el-menu-item>
-      <el-menu-item index="4-2">选项二</el-menu-item>
-      <el-menu-item index="4-3">选项三</el-menu-item>
-    </el-sub-menu>
+    <el-menu-item index="4" @click="navigateTo('chatAI')">ChatAI</el-menu-item>
   </el-menu>
 </template>
 
