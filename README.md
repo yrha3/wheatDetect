@@ -11,4 +11,6 @@ vue 中要cd wheatDetection\vuepage\my-vue-project
 yolov5-7.0中包含了除训练用数据集之外的全部内容，大多数路径应该都是相对路径
 全局变量IP在main.ts中（使用ts语法需要相应的依赖）
 
-git:
+ui：
+npm i；
+npm run dev
