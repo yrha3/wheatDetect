@@ -1,4 +1,6 @@
 # yolo-
+vue中全局变量在.env.development中
+
 小组项目
 前端VUE3.0 + Element-plus
 +
@@ -23,3 +25,4 @@ git checkout -b 9-22
 git add .
 git commit -m "上传本地内容到 9-22 分支"
 git push origin 9-22
+

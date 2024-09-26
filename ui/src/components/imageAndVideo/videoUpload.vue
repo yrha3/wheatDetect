@@ -10,12 +10,13 @@
       <div class="upload-wrapper">
         <el-upload
           class="upload-demo"
-          action="http://127.0.0.1:5000/api/video/upload"
+          :action="`${baseUrl}/api/video/upload`"
           :on-preview="handlePreview"
           :on-success="handleUploadSuccess"
           :on-remove="handleRemove"
           :file-list="fileList"
           list-type="text"
+          :limit="5"
         >
           <el-button type="primary">点击上传<i class="el-icon-upload el-icon--right" /></el-button>
           <div slot="tip" class="el-upload__tip">
@@ -28,8 +29,8 @@
         <el-table :data="paginatedResults" style="width: 100%">
           <el-table-column
             prop="videoUrl"
-            label="Video"
-            width="150"
+            label="视频"
+            width="300"
           >
             <template slot-scope="scope">
               <video :src="scope.row.videoUrl" controls style="width: 100px; height: 100px; object-fit: cover" />
@@ -37,11 +38,11 @@
           </el-table-column>
           <el-table-column
             prop="detectionCount"
-            label="Detection Count"
-            width="150"
+            label="检测计数"
+            width="300"
           />
           <el-table-column
-            label="Actions"
+            label="下载"
             width="300"
           >
             <template slot-scope="scope">
@@ -116,7 +117,8 @@ export default {
           imageUrl: 'https://tse3-mm.cn.bing.net/th/id/OIP-C.YX6_W4RHD_Ngsb9NuqXxbgAAAA?w=136&h=132&c=7&r=0&o=5&dpr=1.6&pid=1.7',
           link: 'https://wheat-urgi.versailles.inra.fr/Projects/IWGSC'
         }
-      ]
+      ],
+      baseUrl: process.env.VUE_APP_API_URL
     }
   },
   computed: {
@@ -129,15 +131,17 @@ export default {
   methods: {
     handleUploadSuccess(response) {
       console.log('Upload successful:', response)
+      const baseUrl = process.env.VUE_APP_API_URL
       this.results.push({
-        videoUrl: `http://127.0.0.1:5000/api/video/results/${response.video_url}`,
-        downloadVideoUrl: `http://127.0.0.1:5000/api/video/download/${response.video_url}`,
-        dataUrl: `http://127.0.0.1:5000/api/video/data/${response.data_url}`,
+        videoUrl: `${baseUrl}/api/video/results/${response.video_url}`,
+        downloadVideoUrl: `${baseUrl}/api/video/download/${response.video_url}`,
+        dataUrl: `${baseUrl}/api/video/data/${response.data_url}`,
         detectionCount: response.detection_count
       })
     },
     handleRemove(file, fileList) {
       this.fileList = fileList
+      this.imageUrl = ''
     },
     handlePreview(file) {
       console.log('File preview:', file)

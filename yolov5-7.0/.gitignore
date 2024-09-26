@@ -24,10 +24,10 @@
 !cfg/yolov3*.cfg
 
 storage.googleapis.com
-#runs/*
+runs/*
 
-!runs/
-!runs/**
+# !runs/
+# !runs/**
 
 data/*
 data/images/*

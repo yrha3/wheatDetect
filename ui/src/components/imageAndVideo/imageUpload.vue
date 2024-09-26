@@ -9,12 +9,13 @@
       <div class="upload-wrapper">
         <el-upload
           class="upload-demo"
-          action="http://127.0.0.1:5000/api/image/upload"
+          :action="`${baseUrl}/api/image/upload`"
           :on-preview="handlePreview"
           :on-success="handleUploadSuccess"
           :on-remove="handleRemove"
           :file-list="fileList"
           list-type="picture"
+          :limit="5"
         >
           <el-button type="primary">点击上传<i class="el-icon-upload el-icon--right" /></el-button>
           <div slot="tip" class="el-upload__tip">
@@ -27,8 +28,8 @@
         <el-table :data="paginatedResults" style="width: 100%">
           <el-table-column
             prop="imageUrl"
-            label="Image"
-            width="150"
+            label="标注图像"
+            width="300"
           >
             <template slot-scope="scope">
               <el-image :src="scope.row.imageUrl" style="width: 100px; height: 100px; object-fit: cover" />
@@ -36,11 +37,11 @@
           </el-table-column>
           <el-table-column
             prop="wheatCount"
-            label="Wheat Count"
-            width="150"
+            label="麦穗头数量"
+            width="300"
           />
           <el-table-column
-            label="Actions"
+            label="下载"
             width="300"
           >
             <template slot-scope="scope">
@@ -115,7 +116,8 @@ export default {
           imageUrl: 'https://tse3-mm.cn.bing.net/th/id/OIP-C.YX6_W4RHD_Ngsb9NuqXxbgAAAA?w=136&h=132&c=7&r=0&o=5&dpr=1.6&pid=1.7',
           link: 'https://wheat-urgi.versailles.inra.fr/Projects/IWGSC'
         }
-      ]
+      ],
+      baseUrl: process.env.VUE_APP_API_URL // 从环境变量中获取 baseUrl
     }
   },
   computed: {
@@ -128,10 +130,11 @@ export default {
   methods: {
     handleUploadSuccess(response) {
       console.log('Upload successful:', response)
+      const baseUrl = process.env.VUE_APP_API_URL // 从环境变量中获取 baseUrl
       this.results.push({
-        imageUrl: `http://127.0.0.1:5000/api/image${response.image_url}`,
-        downloadImageUrl: `http://127.0.0.1:5000/api/image/download${response.image_url}`,
-        dataUrl: `http://127.0.0.1:5000/api/image/data${response.data_url}`,
+        imageUrl: `${baseUrl}/api/image${response.image_url}`, // 正确引用 baseUrl
+        downloadImageUrl: `${baseUrl}/api/image/download${response.image_url}`, // 正确引用 baseUrl
+        dataUrl: `${baseUrl}/api/image/data${response.data_url}`, // 正确引用 baseUrl
         wheatCount: response.wheat_count
       })
     },

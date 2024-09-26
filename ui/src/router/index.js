@@ -70,6 +70,12 @@ export const constantRoutes = [
           name: 'chat',
           component: () => import('@/components/imageAndVideo/chat.vue'),
           meta: { title: 'Chat AI' }
+        },
+        {
+          path: 'wheat-disease',
+          name: 'wheat-disease',
+          component: () => import('@/components/imageAndVideo/wheatDisease.vue'),
+          meta: { title: 'Wheat Disease' }
         }
       ]
     }]

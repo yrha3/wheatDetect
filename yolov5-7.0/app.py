@@ -1,6 +1,6 @@
 import os
 import json
-from flask import Flask, request, jsonify, send_file
+from flask import Flask, request, jsonify, send_file,send_from_directory
 import torch
 from models.common import DetectMultiBackend
 from utils.general import non_max_suppression, scale_boxes, check_img_size, increment_path
@@ -13,13 +13,13 @@ from utils.torch_utils import select_device, time_sync
 from utils.plots import Annotator, colors
 from utils.dataloaders import LoadImages
 import mimetypes
-
+import torch.nn.functional as F  # 引入 softmax 函数
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 # 初始化Flask和模型
 device = select_device('')
-model = DetectMultiBackend('runs/train/13cBest.pt', device=device)  # Load your trained model
+model = DetectMultiBackend('weights/13cBest.pt', device=device)  # Load your trained model
 stride, names, pt = model.stride, model.names, model.pt
 
 UPLOAD_FOLDER = 'uploads'
@@ -42,8 +42,7 @@ def draw_boxes(image, predictions, names):
 
 def detect_video(video_path, save_path):
     source = video_path
-    # save_dir = increment_path(Path(save_path) / Path(video_path).stem, mkdir=True)  # increment run
-    save_dir = Path(save_path)  # No increment_path here
+    save_dir = Path(save_path)
 
     # Dataloader
     dataset = LoadImages(source, img_size=640, stride=stride, auto=pt)
@@ -55,6 +54,7 @@ def detect_video(video_path, save_path):
     vid_path, vid_writer = None, None
 
     video_results = []
+    total_wheat_count = 0  # 初始化视频总小麦数量
 
     for path, img, im0s, vid_cap, s in dataset:
         t1 = time_sync()
@@ -86,6 +86,8 @@ def detect_video(video_path, save_path):
                 '' if dataset.mode == 'image' else f'_{dataset.frame}')  # img.txt
 
             frame_results = []
+            wheat_count_in_frame = 0  # 初始化该帧的小麦数量
+
             if det is not None and len(det):
                 im0 = draw_boxes(im0, [det], names)
                 for *xyxy, conf, cls in reversed(det):
@@ -96,7 +98,10 @@ def detect_video(video_path, save_path):
                         'class': int(cls),
                         'class_name': names[int(cls)]
                     })
+                    if names[int(cls)] == 'wheat':
+                        wheat_count_in_frame += 1  # 统计该帧中的小麦数量
 
+            total_wheat_count += wheat_count_in_frame  # 累加到视频总小麦数量中
             video_results.append(frame_results)
 
             # Save results (image with detections)
@@ -115,8 +120,6 @@ def detect_video(video_path, save_path):
                         fps, w, h = 30, im0.shape[1], im0.shape[0]
                     save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
 
-                    # vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                    # Use 'avc1' codec for better compatibility
                     fourcc = cv2.VideoWriter_fourcc(*'avc1')
                     vid_writer = cv2.VideoWriter(save_path, fourcc, fps, (w, h))
                 vid_writer.write(im0)
@@ -132,6 +135,7 @@ def detect_video(video_path, save_path):
     print(
         f'Speed: {t[0]:.1f}ms pre-process, {t[1]:.1f}ms inference, {t[2]:.1f}ms NMS per image at shape {(1, 3, 640, 640)}')
 
+    return total_wheat_count  # 返回视频中检测到的小麦总数量
 
 # @app.route('/upload/image', methods=['POST'])
 @app.route('/api/image/upload', methods=['POST'])  # 图像上传
@@ -214,7 +218,7 @@ def upload_video():
     video_folder = os.path.join(RESULT_FOLDER, os.path.splitext(filename)[0])
     os.makedirs(video_folder, exist_ok=True)
 
-    detect_video(filepath, video_folder)
+    detection_count = detect_video(filepath, video_folder)
 
     result_files = os.listdir(video_folder)
     video_file = next((f for f in result_files if f.endswith('.mp4')), None)
@@ -232,7 +236,8 @@ def upload_video():
 
         return jsonify({
             'video_url': video_url,
-            'data_url': data_url
+            'data_url': data_url,
+            'detection_count': detection_count
         })
     else:
         return jsonify({'error': 'Failed to process video'})
@@ -351,6 +356,63 @@ def chat():
 
     return jsonify({'reply': assistant_response})
 
+#分类模型
+classification_model_path = 'weights/best-cls.pt'  # 替换为实际分类模型的路径
+classification_model = DetectMultiBackend(classification_model_path, device=device)
+classification_stride, classification_names, classification_pt = classification_model.stride, classification_model.names, classification_model.pt
+classification_names = ['健康', '锈病', '白粉病', '散黑穗病', '根腐病', '赤霉病', '叶枯病']
+
+@app.route('/api/image/classify', methods=['POST'])
+def classify_image():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'})
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'})
+
+    filename = file.filename
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+    file.save(filepath)
+
+    # 读取图像
+    img = cv2.imread(filepath)
+    img = letterbox(img, 640, stride=32, auto=True)[0]
+    img = img.transpose((2, 0, 1))[::-1]
+    img = np.ascontiguousarray(img)
+    img = torch.from_numpy(img).to(device)
+    img = img.float() / 255.0
+    if img.ndimension() == 3:
+        img = img.unsqueeze(0)
+
+    # 使用分类模型进行分类
+    classification_pred = classification_model(img, augment=False, visualize=False)
+    #print(classification_pred)
+    classification_probs = F.softmax(classification_pred, dim=1)
+    # 获取置信度和类别索引
+    confidence, predicted_class = torch.max(classification_probs, 1)  # 获取最高概率的类别和置信度
+
+    image_url = f"/api/image/{filename}";
+    # 处理分类结果
+    classification_results = {
+        'class': int(predicted_class),
+        'class_name': classification_names[int(predicted_class)],  # 根据类别索引获取类别名称
+        'confidence': float(confidence),
+        'imageUrl': image_url# 将置信度转为浮点数
+    }
+
+    print(classification_results)
+    return jsonify({
+        'classification_results': classification_results
+    })
+# 增加读取图像的路由
+@app.route('/api/image/<path:filename>', methods=['GET'])
+def get_image_classify(filename):
+    full_path = os.path.join(UPLOAD_FOLDER, filename)
+    if os.path.isfile(full_path):
+        return send_file(full_path, mimetype='image/jpeg')  # 假设图像是 JPEG 格式
+    else:
+        return jsonify({'error': 'File not found'}), 404
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

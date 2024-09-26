@@ -11,6 +11,7 @@
       <el-menu-item index="1" @click="navigateTo('image-upload')">Image Upload</el-menu-item>
       <el-menu-item index="2" @click="navigateTo('video-upload')">Video Upload</el-menu-item>
       <el-menu-item index="3" @click="navigateTo('chat')">Chat AI</el-menu-item>
+      <el-menu-item index="3" @click="navigateTo('wheat-disease')">Wheat Disease</el-menu-item>
     </el-menu>
     <!-- 子页面显示 -->
     <router-view />
